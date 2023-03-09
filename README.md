@@ -27,10 +27,12 @@ in the terminal type following commands in the given order.
 
 ### Step-3 : Setting up the files 
 
- create a folder called model_weight_file inside the root directory and add audio_emotion.hdf5 model weight file inside 
+ Create a folder called model_weight_file inside the root directory and add audio_emotion.hdf5 model weight file inside 
 that folder.
 
     model_weight_file/audio_emotion.hdf5
+
+ download this file from this link : https://drive.google.com/file/d/1Ku6l3bjyWJVFgSnbk4nH6fgaNjsLZgLx/view?usp=sharing
 
 ### Step-4 :  running the project (using PowerShell)
 
