@@ -10,7 +10,7 @@ Clone GitHub repository and cd into it.
 
 ```
 $ git clone https://github.com/Thanveerahmd/AER-Server.git
-$ cd HH-AI-Server
+$ cd AER-Server
 ```
 
 ### Step-2 : Setting up the environment.
