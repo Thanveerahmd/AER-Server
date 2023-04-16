@@ -3,12 +3,13 @@ import librosa
 import librosa.display
 import matplotlib.pyplot as plt
 import numpy as np
+
 from PIL import Image
 
 
-def get_audio_spectrogram_image(audio_clip):
-    # load the audio file with librosa
-    y, sr = librosa.load(audio_clip.stream)
+def get_audio_spectrogram_image(audio_clip, sample_rate):
+    y = audio_clip
+    sr = sample_rate
 
     # Generate a spectrogram
     spect = librosa.feature.melspectrogram(y=y, sr=sr, n_fft=2048, hop_length=512)
@@ -29,3 +30,14 @@ def get_audio_spectrogram_image(audio_clip):
     img = img.resize((299, 299))
 
     return img
+
+
+def load_audio(file_path):
+    audio, sample_rate = librosa.load(file_path, sr=None)
+    return audio, sample_rate
+
+
+def split_audio(audio, sample_rate, start_time, end_time):
+    start_frame = int(start_time * sample_rate)
+    end_frame = int(end_time * sample_rate)
+    return audio[start_frame:end_frame]

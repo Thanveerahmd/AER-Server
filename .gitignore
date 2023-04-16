@@ -111,6 +111,7 @@ env.bak/
 venv.bak/
 model_weight_file/
 .idea/
+audio_files
 
 dev.log
 

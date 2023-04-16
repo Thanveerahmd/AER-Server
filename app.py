@@ -3,12 +3,16 @@ from logging.config import dictConfig
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from pyannote.audio import Pipeline
 from werkzeug.exceptions import InternalServerError
+from dotenv import load_dotenv
 
 import classifier as clf
 import config
 import model
 import preprocess as pre
+
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -51,6 +55,12 @@ try:
 except Exception as e:
     raise InternalServerError(f"Failed to load the model: {str(e)}")
 
+try:
+    pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization",
+                                        use_auth_token=os.getenv("USE_AUTH_TOKEN_HF"))
+except Exception as e:
+    raise InternalServerError(f"Failed to connect with Pipeline to download pre trained model")
+
 
 @app.route("/", methods=["GET"])
 def hello_aer_server():
@@ -71,10 +81,47 @@ def upload_audio_file():
         return {'error': 'No file selected for uploading'}, 400
 
     try:
+        # Dictionary to store speaker information
+        speaker_dict = {}
 
-        spect_img = pre.get_audio_spectrogram_image(audio_file)
-        prediction_results = model.get_prediction(img=spect_img, model=MODEL)
-        classification_report = clf.get_detection_report(prediction_results)
+        # Create the directory for saving the models weights if not exist
+        os.makedirs('audio_files', exist_ok=True)
+
+        audio_file.save('audio_files/{}'.format(audio_file.filename))
+        diarization = pipeline('audio_files/{}'.format(audio_file.filename))
+        audio, sample_rate = pre.load_audio('audio_files/{}'.format(audio_file.filename))
+
+        # iterate over speaker turns and plot spectrogram's for each turn and compute the emotion
+        for turn, _, speaker in diarization.itertracks(yield_label=True):
+
+            print("========================================================")
+            print()
+
+            print(f"start={turn.start:.1f}s stop={turn.end:.1f}s {speaker}")
+
+            # Get start and end time of the turn
+            start, end = turn.start, turn.end
+
+            # Crop the audio signal for the turn
+            audio_split = pre.split_audio(audio, sample_rate, start, end)
+
+            print()
+
+            spect_img = pre.get_audio_spectrogram_image(audio_split,sample_rate)
+            prediction_results = model.get_prediction(img=spect_img, model=MODEL)
+            classification_report = clf.get_detection_report(prediction_results)
+
+            print(classification_report)
+
+            # Add the speaker, start, end times, and spectrogram image to the dictionary
+            if speaker not in speaker_dict:
+                speaker_dict[speaker] = []
+
+            speaker_dict[speaker].append({
+                "start_time": str(start)+' s',
+                "end_time": str(end)+' s',
+                "classification_report": classification_report
+            })
 
     except IndexError as e:
         return {"error": str(e)}, 400
@@ -82,7 +129,7 @@ def upload_audio_file():
     except Exception as e:
         return {"error": str(e)}, 500
 
-    return jsonify(classification_report), 200
+    return jsonify(speaker_dict), 200
 
 
 if __name__ == "__main__":
